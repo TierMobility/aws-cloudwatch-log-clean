@@ -41,7 +41,10 @@ Check that everything looks good, then:
 
 ### sweep_log_streams.py
 
-This will clean up old and empty log streams inside of a log group. Usage:
+This will clean up old and empty log streams inside of a log group.
+:warning: If there are no log streams left in a log group (after sweeping) the log group will be deleted too.
+
+Usage:
 
 ```bash
 ./sweep_log_streams.py [log-stream-prefix] --dry-run

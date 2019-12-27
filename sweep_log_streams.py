@@ -3,6 +3,7 @@ import argparse
 from datetime import datetime, timedelta
 from dateutil import tz
 from time import sleep
+import sys
 
 import boto3
 
@@ -12,6 +13,22 @@ client = boto3.client('logs')
 def print_log_group(log_group, message):
     print("[{}] {}".format(log_group['logGroupName'], message))
 
+
+def delete_log_group(log_group, dry_run=False):
+    if dry_run:
+        print(" - would delete group: %s  (--dry-run set)" %
+              log_group['logGroupName'])
+        return
+
+    try:
+        client.delete_log_group(
+            logGroupName=log_group.get('logGroupName')
+        )
+        print(" - deleted group: %s" % log_group['logGroupName'])
+    except:
+        e = sys.exc_info()[0]
+        print(e)
+        exit(1)
 
 def get_log_groups(prefix, next_token=None):
     opts = {
@@ -88,8 +105,10 @@ def delete_old_streams(log_group, dry_run=False):
 
 
 def get_arg_parser():
-    parser = argparse.ArgumentParser(description="Cleans up old and empty log streams from log groups matching a "
-                                                 "provided pattern")
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                description="Cleans up old and empty log streams from log groups matching a "
+                            "provided pattern.\n"
+                            "(!) If there is no log stream left, the log group will be deleted too (!)")
 
     parser.add_argument("--dry-run",
                         dest="dry_run",
@@ -106,6 +125,8 @@ def get_arg_parser():
 def main(prefix, dry_run=False):
     for log_group in get_log_groups(prefix):
         delete_old_streams(log_group, dry_run)
+        if len(list(get_streams(log_group))) == 0:
+            delete_log_group(log_group, dry_run)
     print("Done")
 
 
